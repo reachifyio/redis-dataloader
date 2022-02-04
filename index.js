@@ -6,7 +6,6 @@ const mapPromise = (promise, fn) => Promise.all(promise.map(fn));
 
 module.exports = fig => {
   const redis = fig.redis;
-  const isIORedis = redis.constructor.name !== 'RedisClient';
 
   const parse = (resp, opt) =>
     new Promise((resolve, reject) => {
@@ -49,42 +48,33 @@ module.exports = fig => {
             multi.expire(fullKey, opt.expire);
           }
           multi.get(fullKey);
-          multi.exec((err, replies) => {
-            const lastReply = isIORedis
-              ? _.last(_.last(replies))
-              : _.last(replies);
-
-            return err ? reject(err) : parse(lastReply, opt).then(resolve);
-          });
+          multi.exec()
+            .then(replies => {
+              const lastReply = _.last(replies);
+              parse(lastReply, opt).then(resolve);
+            })
+            .catch(reject);
         })
-    );
-
-  const rGet = (keySpace, key, opt) =>
-    new Promise((resolve, reject) =>
-      redis.get(
-        makeKey(keySpace, key, opt.cacheKeyFn),
-        (err, result) => (err ? reject(err) : parse(result, opt).then(resolve))
-      )
     );
 
   const rMGet = (keySpace, keys, opt) =>
     new Promise((resolve, reject) =>
-      redis.mget(
+      redis.mGet(
         _.map(keys, k => makeKey(keySpace, k, opt.cacheKeyFn)),
-        (err, results) => {
-          return err
-            ? reject(err)
-            : mapPromise(results, r => parse(r, opt)).then(resolve);
-        }
       )
+        .then(results => {
+          mapPromise(results, r => parse(r, opt)).then(resolve);
+        })
+        .catch(reject)
     );
 
   const rDel = (keySpace, key, opt) =>
     new Promise((resolve, reject) =>
       redis.del(
         makeKey(keySpace, key, opt.cacheKeyFn),
-        (err, resp) => (err ? reject(err) : resolve(resp))
       )
+        .then(resolve)
+        .catch(reject)
     );
 
   return class RedisDataLoader {

@@ -1,5 +1,5 @@
 {
-  "name": "redis-dataloader",
+  "name": "@reachify/redis-dataloader",
   "version": "1.0.2",
   "description": "DataLoader Using Redis as a Cache",
   "main": "index.js",
@@ -36,7 +36,7 @@
     "chai": "^3.5.0",
     "chai-as-promised": "^7.1.1",
     "mocha": "^8.1.1",
-    "redis": "^2.6.3",
+    "redis": "^4.0.3",
     "redis-mock": "^0.51.0",
     "sinon": "^1.17.6"
   }
